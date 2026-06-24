@@ -18,7 +18,10 @@ export async function POST(request: Request) {
 
     if (!dni || !celular || !figuritas) {
       return Response.json(
-        { ok: false, message: "Todos los campos son obligatorios." },
+        {
+          success: false,
+          error: "Todos los campos son obligatorios.",
+        },
         { status: 400 },
       );
     }
@@ -34,15 +37,24 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       return Response.json(
-        { ok: false, message: "Google Apps Script rechazó la solicitud." },
-        { status: 502 },
+        {
+          success: false,
+          error: `Google Apps Script respondió con estado ${response.status}.`,
+        },
+        { status: 500 },
       );
     }
 
-    return Response.json({ ok: true });
-  } catch {
+    return Response.json({ success: true });
+  } catch (error) {
     return Response.json(
-      { ok: false, message: "No pudimos guardar tus figus." },
+      {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "No pudimos guardar tus figus.",
+      },
       { status: 500 },
     );
   }
