@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       return Response.json(
-        { ok: false, message: "El servicio externo rechazó la solicitud." },
+        { ok: false, message: "Google Apps Script rechazó la solicitud." },
         { status: 502 },
       );
     }
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     return Response.json({ ok: true });
   } catch {
     return Response.json(
-      { ok: false, message: "No se pudieron guardar las figuritas." },
+      { ok: false, message: "No pudimos guardar tus figus." },
       { status: 500 },
     );
   }

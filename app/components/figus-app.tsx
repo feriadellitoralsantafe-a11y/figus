@@ -39,7 +39,7 @@ export default function FigusApp() {
     setStatus("saving");
 
     try {
-      const response = await fetch("/api/figus", {
+      const response = await fetch("/api/guardar-figus", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -213,7 +213,7 @@ export default function FigusApp() {
                 )}
                 {status === "error" && (
                   <p className="status-message status-error">
-                    Error al guardar. Intentá nuevamente.
+                    No pudimos guardar tus figus. Intentá de nuevo
                   </p>
                 )}
               </div>
