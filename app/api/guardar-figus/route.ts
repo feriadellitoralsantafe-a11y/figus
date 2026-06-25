@@ -53,12 +53,21 @@ export async function POST(request: Request) {
 
     console.log("[guardar-figus] URL usada:", GOOGLE_SCRIPT_URL);
 
+    const googlePayload = {
+      dni,
+      nombreApellido,
+      celular,
+      figuritas,
+    };
+
+    console.log("[guardar-figus] JSON enviado:", googlePayload);
+
     const response = await fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ dni, nombreApellido, celular, figuritas }),
+      body: JSON.stringify(googlePayload),
       cache: "no-store",
     });
 

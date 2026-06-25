@@ -40,13 +40,13 @@ const COUNTRIES = [
 
 const initialForm = {
   dni: "",
-  nombreApellido: "",
   celular: "",
 };
 
 export default function FigusApp() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(initialForm);
+  const [nombreApellido, setNombreApellido] = useState("");
   const [country, setCountry] = useState("");
   const [customCountry, setCustomCountry] = useState("");
   const [stickerTitle, setStickerTitle] = useState("");
@@ -122,7 +122,7 @@ export default function FigusApp() {
 
     const nextErrors: Record<string, string> = {};
     if (!form.dni.trim()) nextErrors.dni = "Ingresá tu DNI.";
-    if (!form.nombreApellido.trim()) {
+    if (!nombreApellido.trim()) {
       nextErrors.nombreApellido = "Ingresá tu nombre y apellido.";
     }
     if (!form.celular.trim()) nextErrors.celular = "Ingresá tu celular.";
@@ -137,15 +137,17 @@ export default function FigusApp() {
     setSubmitError("");
 
     try {
+      const payload = {
+        dni: form.dni.trim(),
+        nombreApellido: nombreApellido.trim(),
+        celular: form.celular.trim(),
+        figuritas: stickers.join(", "),
+      };
+
       const response = await fetch("/api/guardar-figus", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dni: form.dni.trim(),
-          nombreApellido: form.nombreApellido.trim(),
-          celular: form.celular.trim(),
-          figuritas: stickers.join(", "),
-        }),
+        body: JSON.stringify(payload),
       });
 
       const result = (await response.json().catch(() => ({}))) as SaveResponse;
@@ -158,6 +160,7 @@ export default function FigusApp() {
       }
 
       setForm(initialForm);
+      setNombreApellido("");
       setCountry("");
       setCustomCountry("");
       setStickerTitle("");
@@ -261,10 +264,16 @@ export default function FigusApp() {
                     type="text"
                     autoComplete="name"
                     placeholder="Ej: Juan Pérez"
-                    value={form.nombreApellido}
-                    onChange={(event) =>
-                      updateField("nombreApellido", event.target.value)
-                    }
+                    value={nombreApellido}
+                    onChange={(event) => {
+                      setNombreApellido(event.target.value);
+                      setErrors((current) => ({
+                        ...current,
+                        nombreApellido: "",
+                      }));
+                      setSubmitError("");
+                      if (status !== "idle") setStatus("idle");
+                    }}
                     aria-invalid={Boolean(errors.nombreApellido)}
                   />
                   {errors.nombreApellido && (
