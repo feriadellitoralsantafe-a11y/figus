@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useState } from "react";
 
 type FormStatus = "idle" | "saving" | "success" | "error";
@@ -89,6 +88,7 @@ export default function FigusApp() {
             F
           </span>
           <span className="brand-name">FIGUS</span>
+          <span className="brand-venue">FERIA DEL LITORAL</span>
           <span className="edition">MUNDIAL 2026</span>
         </div>
 
@@ -109,13 +109,9 @@ export default function FigusApp() {
 
           {!showForm && (
             <div className="actions">
-              <Link href="/buscar" className="button button-primary">
-                <SearchIcon />
-                Buscar Figus
-              </Link>
               <button
                 type="button"
-                className="button button-secondary"
+                className="button button-primary"
                 onClick={() => setShowForm(true)}
               >
                 <PlusIcon />
@@ -252,15 +248,6 @@ export default function FigusApp() {
         </div>
       </section>
     </main>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="m16 16 4 4" />
-    </svg>
   );
 }
 
