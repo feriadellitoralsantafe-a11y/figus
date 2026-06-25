@@ -444,7 +444,8 @@ h2 {
 }
 
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   width: 100%;
   outline: none;
   border: 1px solid rgba(33, 160, 255, 0.42);
@@ -462,6 +463,26 @@ h2 {
   padding: 0 14px;
 }
 
+.field select {
+  height: 48px;
+  padding: 0 38px 0 14px;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--blue-bright) 50%),
+    linear-gradient(135deg, var(--blue-bright) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 20px,
+    calc(100% - 12px) 20px;
+  background-repeat: no-repeat;
+  background-size: 6px 6px, 6px 6px;
+  cursor: pointer;
+}
+
+.field select option {
+  background: #071129;
+  color: white;
+}
+
 .field textarea {
   min-height: 84px;
   resize: vertical;
@@ -475,7 +496,8 @@ h2 {
 }
 
 .field input:focus,
-.field textarea:focus {
+.field textarea:focus,
+.field select:focus {
   border-color: var(--blue-bright);
   box-shadow:
     0 0 0 3px rgba(8, 120, 255, 0.13),
@@ -483,7 +505,8 @@ h2 {
 }
 
 .field input[aria-invalid="true"],
-.field textarea[aria-invalid="true"] {
+.field textarea[aria-invalid="true"],
+.field select[aria-invalid="true"] {
   border-color: rgba(255, 107, 107, 0.65);
 }
 
@@ -498,6 +521,113 @@ h2 {
   min-height: 18px;
   color: #8493ad;
   font-size: 10px;
+}
+
+.sticker-builder {
+  margin-bottom: 22px;
+}
+
+.sticker-builder-label {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--magenta);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sticker-entry-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(190px, 1.25fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.sticker-entry-row .field {
+  margin-bottom: 0;
+}
+
+.add-sticker-button {
+  min-height: 48px;
+  padding: 0 16px;
+  border-color: rgba(255, 255, 255, 0.82);
+  background: linear-gradient(
+    135deg,
+    rgba(8, 120, 255, 0.34),
+    rgba(255, 22, 143, 0.18)
+  );
+  color: white;
+  box-shadow: 3px 3px 0 rgba(255, 22, 143, 0.62);
+  text-transform: uppercase;
+}
+
+.add-sticker-button:hover {
+  border-color: var(--blue-bright);
+  background: rgba(8, 120, 255, 0.34);
+}
+
+.custom-country-field {
+  max-width: 270px;
+  margin-top: 14px;
+  margin-bottom: 0;
+}
+
+.sticker-builder-error {
+  margin-top: 10px;
+}
+
+.sticker-preview {
+  display: flex;
+  min-height: 58px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px dashed rgba(33, 160, 255, 0.42);
+  border-radius: 10px 16px 10px 16px;
+  background: rgba(1, 5, 16, 0.62);
+}
+
+.sticker-preview--empty {
+  color: #71809d;
+  font-size: 11px;
+}
+
+.sticker-chip {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  border: 1px solid rgba(33, 160, 255, 0.62);
+  border-radius: 6px 10px 6px 10px;
+  background:
+    linear-gradient(135deg, rgba(8, 120, 255, 0.22), rgba(255, 22, 143, 0.1)),
+    rgba(5, 13, 31, 0.94);
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 2px 2px 0 rgba(255, 22, 143, 0.35);
+}
+
+.sticker-chip button {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 1px solid rgba(255, 22, 143, 0.62);
+  border-radius: 50%;
+  background: rgba(255, 22, 143, 0.15);
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.sticker-chip button:hover {
+  background: var(--magenta);
 }
 
 .submit-button {
@@ -749,6 +879,23 @@ h2 {
   .field-row {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+
+  .sticker-entry-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .sticker-entry-row .field {
+    margin-bottom: 0;
+  }
+
+  .custom-country-field {
+    max-width: none;
+  }
+
+  .add-sticker-button {
+    width: 100%;
   }
 
   .card-footer {
