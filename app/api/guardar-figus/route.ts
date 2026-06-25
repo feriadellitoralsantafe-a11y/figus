@@ -7,6 +7,8 @@ type FigusPayload = {
   figuritas?: unknown;
 };
 
+const GOOGLE_FETCH_ATTEMPTS = 2;
+
 function extractGoogleError(responseText: string) {
   const messageMatch = responseText.match(
     /<p[^>]*class=["']errorMessage["'][^>]*>(.*?)<\/p>/i,
@@ -16,6 +18,46 @@ function extractGoogleError(responseText: string) {
     ?.replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/g, " ")
     .trim();
+}
+
+async function postToGoogle(payload: {
+  dni: string;
+  celular: string;
+  figuritas: string;
+}) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= GOOGLE_FETCH_ATTEMPTS; attempt += 1) {
+    try {
+      console.log(
+        `[guardar-figus] Enviando a Google Apps Script. Intento ${attempt}/${GOOGLE_FETCH_ATTEMPTS}.`,
+      );
+
+      return await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        cache: "no-store",
+        redirect: "follow",
+      });
+    } catch (error) {
+      lastError = error;
+      console.error(
+        `[guardar-figus] Falló el intento ${attempt}/${GOOGLE_FETCH_ATTEMPTS}:`,
+        error,
+      );
+
+      if (attempt < GOOGLE_FETCH_ATTEMPTS) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Falló la conexión con Google Apps Script.");
 }
 
 export async function POST(request: Request) {
@@ -45,14 +87,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ dni, celular, figuritas }),
-      cache: "no-store",
-    });
+    const response = await postToGoogle({ dni, celular, figuritas });
 
     const responseText = await response.text();
 
