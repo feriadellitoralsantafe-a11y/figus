@@ -7,12 +7,13 @@ function doPost(e) {
     const dni = String(data.dni || "").trim();
     const nombreApellido = String(data.nombreApellido || "").trim();
     const celular = String(data.celular || "").trim();
+    const pais = String(data.pais || "").trim();
     const figuritas = String(data.figuritas || "").trim();
 
-    if (!dni || !nombreApellido || !celular || !figuritas) {
+    if (!nombreApellido || !figuritas) {
       return jsonResponse({
         success: false,
-        error: "Todos los campos son obligatorios.",
+        error: "El nombre y las figuritas son obligatorios.",
       });
     }
 
@@ -28,7 +29,7 @@ function doPost(e) {
     const lastRow = sheet.getLastRow();
     let existingRow = 0;
 
-    if (lastRow >= 2) {
+    if (dni && lastRow >= 2) {
       const dniValues = sheet.getRange(2, 1, lastRow - 1, 1).getDisplayValues();
       const matchIndex = dniValues.findIndex(
         ([savedDni]) => String(savedDni).trim() === dni,

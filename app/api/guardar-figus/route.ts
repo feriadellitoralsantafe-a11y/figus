@@ -5,6 +5,7 @@ type FigusPayload = {
   dni?: unknown;
   nombreApellido?: unknown;
   celular?: unknown;
+  pais?: unknown;
   figuritas?: unknown;
 };
 
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
         : "";
     const celular =
       typeof body.celular === "string" ? body.celular.trim() : "";
+    const pais = typeof body.pais === "string" ? body.pais.trim() : "";
     const figuritas =
       typeof body.figuritas === "string" ? body.figuritas.trim() : "";
 
@@ -36,16 +38,17 @@ export async function POST(request: Request) {
       dni,
       nombreApellido,
       celular,
+      pais,
       figuritas,
     });
 
-    if (!dni || !nombreApellido || !celular || !figuritas) {
+    if (!nombreApellido || !figuritas) {
       console.error("[guardar-figus] Validación fallida: faltan campos.");
 
       return Response.json(
         {
           success: false,
-          error: "Todos los campos son obligatorios.",
+          error: "El nombre y las figuritas son obligatorios.",
         },
         { status: 400 },
       );
@@ -57,6 +60,7 @@ export async function POST(request: Request) {
       dni,
       nombreApellido,
       celular,
+      pais,
       figuritas,
     };
 
@@ -101,7 +105,24 @@ export async function POST(request: Request) {
       );
     }
 
-    return Response.json({ success: true, googleResponse: responseText });
+    const googleResponse = JSON.parse(responseText) as {
+      success?: boolean;
+      error?: string;
+    };
+
+    if (!googleResponse.success) {
+      return Response.json(
+        {
+          success: false,
+          error:
+            googleResponse.error ||
+            "Google Apps Script no pudo guardar los datos.",
+        },
+        { status: 500 },
+      );
+    }
+
+    return Response.json({ success: true, googleResponse });
   } catch (error) {
     console.error("[guardar-figus] Error exacto:", error);
 

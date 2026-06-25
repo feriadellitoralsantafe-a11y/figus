@@ -430,7 +430,7 @@ h2 {
 }
 
 .identity-row {
-  grid-template-columns: 0.75fr 1.35fr 1fr;
+  grid-template-columns: 1fr;
 }
 
 .field {
@@ -544,7 +544,7 @@ h2 {
 
 .sticker-entry-row {
   display: grid;
-  grid-template-columns: minmax(130px, 0.8fr) minmax(190px, 1.25fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 12px;
 }

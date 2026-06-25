@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, KeyboardEvent, useState } from "react";
 
 type FormStatus = "idle" | "saving" | "success" | "error";
 
@@ -9,123 +9,77 @@ type SaveResponse = {
   error?: string;
 };
 
-const COUNTRIES = [
-  "Argentina",
-  "Brasil",
-  "Uruguay",
-  "Chile",
-  "Paraguay",
-  "Colombia",
-  "Ecuador",
-  "Perú",
-  "Bolivia",
-  "Venezuela",
-  "México",
-  "Estados Unidos",
-  "Canadá",
-  "Francia",
-  "España",
-  "Alemania",
-  "Italia",
-  "Inglaterra",
-  "Portugal",
-  "Países Bajos",
-  "Bélgica",
-  "Croacia",
-  "Marruecos",
-  "Japón",
-  "Corea del Sur",
-  "Otro",
-] as const;
-
-const initialForm = {
-  dni: "",
-  celular: "",
-};
-
 export default function FigusApp() {
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState(initialForm);
   const [nombreApellido, setNombreApellido] = useState("");
-  const [country, setCountry] = useState("");
-  const [customCountry, setCustomCountry] = useState("");
-  const [stickerTitle, setStickerTitle] = useState("");
+  const [stickerInput, setStickerInput] = useState("");
   const [stickers, setStickers] = useState<string[]>([]);
   const [status, setStatus] = useState<FormStatus>("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState("");
 
-  function updateField(field: keyof typeof form, value: string) {
-    setForm((current) => ({ ...current, [field]: value }));
-    setErrors((current) => ({ ...current, [field]: "" }));
+  function resetStatus() {
     setSubmitError("");
     if (status !== "idle") setStatus("idle");
   }
 
-  function clearStickerError() {
+  function handleAddStickers() {
+    const entries = stickerInput
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+
+    if (entries.length === 0) {
+      setErrors((current) => ({
+        ...current,
+        sticker: "Ingresá al menos un número de figurita.",
+      }));
+      return;
+    }
+
+    if (entries.some((entry) => !/^\d+$/.test(entry))) {
+      setErrors((current) => ({
+        ...current,
+        sticker: "Usá sólo números separados por coma.",
+      }));
+      return;
+    }
+
+    setStickers((current) => {
+      const added = new Set(current);
+      entries.forEach((entry) => added.add(entry));
+      return Array.from(added);
+    });
+    setStickerInput("");
     setErrors((current) => ({
       ...current,
       sticker: "",
       figuritas: "",
     }));
-    setSubmitError("");
-    if (status !== "idle") setStatus("idle");
+    resetStatus();
   }
 
-  function handleAddSticker() {
-    const selectedCountry =
-      country === "Otro" ? customCountry.trim() : country.trim();
-    const title = stickerTitle.trim();
-
-    if (!selectedCountry || !title) {
-      setErrors((current) => ({
-        ...current,
-        sticker: "Elegí un país y completá el título o número.",
-      }));
-      return;
+  function handleStickerKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleAddStickers();
     }
-
-    const sticker = `${selectedCountry} ${title}`;
-    const isDuplicate = stickers.some(
-      (current) => current.toLocaleLowerCase() === sticker.toLocaleLowerCase(),
-    );
-
-    if (isDuplicate) {
-      setErrors((current) => ({
-        ...current,
-        sticker: "Esa figurita ya fue agregada.",
-      }));
-      return;
-    }
-
-    setStickers((current) => [...current, sticker]);
-    setStickerTitle("");
-    setErrors((current) => ({
-      ...current,
-      sticker: "",
-      figuritas: "",
-    }));
-    setSubmitError("");
-    if (status !== "idle") setStatus("idle");
   }
 
   function removeSticker(stickerToRemove: string) {
     setStickers((current) =>
       current.filter((sticker) => sticker !== stickerToRemove),
     );
-    setSubmitError("");
-    if (status !== "idle") setStatus("idle");
+    resetStatus();
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const nextErrors: Record<string, string> = {};
-    if (!form.dni.trim()) nextErrors.dni = "Ingresá tu DNI.";
     if (!nombreApellido.trim()) {
       nextErrors.nombreApellido = "Ingresá tu nombre y apellido.";
     }
-    if (!form.celular.trim()) nextErrors.celular = "Ingresá tu celular.";
     if (stickers.length === 0) {
       nextErrors.figuritas = "Agregá al menos una figurita.";
     }
@@ -138,9 +92,10 @@ export default function FigusApp() {
 
     try {
       const payload = {
-        dni: form.dni.trim(),
+        dni: "",
         nombreApellido: nombreApellido.trim(),
-        celular: form.celular.trim(),
+        celular: "",
+        pais: "",
         figuritas: stickers.join(", "),
       };
 
@@ -159,11 +114,8 @@ export default function FigusApp() {
         );
       }
 
-      setForm(initialForm);
       setNombreApellido("");
-      setCountry("");
-      setCustomCountry("");
-      setStickerTitle("");
+      setStickerInput("");
       setStickers([]);
       setStatus("success");
     } catch {
@@ -241,22 +193,6 @@ export default function FigusApp() {
             <form onSubmit={handleSubmit} noValidate>
               <div className="field-row identity-row">
                 <div className="field">
-                  <label htmlFor="dni">DNI</label>
-                  <input
-                    id="dni"
-                    name="dni"
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    placeholder="Ej: 30123456"
-                    value={form.dni}
-                    onChange={(event) => updateField("dni", event.target.value)}
-                    aria-invalid={Boolean(errors.dni)}
-                  />
-                  {errors.dni && <span className="field-error">{errors.dni}</span>}
-                </div>
-
-                <div className="field">
                   <label htmlFor="nombreApellido">Nombre y apellido</label>
                   <input
                     id="nombreApellido"
@@ -271,8 +207,7 @@ export default function FigusApp() {
                         ...current,
                         nombreApellido: "",
                       }));
-                      setSubmitError("");
-                      if (status !== "idle") setStatus("idle");
+                      resetStatus();
                     }}
                     aria-invalid={Boolean(errors.nombreApellido)}
                   />
@@ -282,97 +217,44 @@ export default function FigusApp() {
                     </span>
                   )}
                 </div>
-
-                <div className="field">
-                  <label htmlFor="celular">Celular</label>
-                  <input
-                    id="celular"
-                    name="celular"
-                    type="tel"
-                    autoComplete="tel"
-                    placeholder="Ej: 11 2345 6789"
-                    value={form.celular}
-                    onChange={(event) =>
-                      updateField("celular", event.target.value)
-                    }
-                    aria-invalid={Boolean(errors.celular)}
-                  />
-                  {errors.celular && (
-                    <span className="field-error">{errors.celular}</span>
-                  )}
-                </div>
               </div>
 
               <div className="sticker-builder">
-                <span className="sticker-builder-label">Figuritas que tengo</span>
+                <span className="sticker-builder-label">
+                  Números de figuritas
+                </span>
 
                 <div className="sticker-entry-row">
-                  <div className="field">
-                    <label htmlFor="country">País</label>
-                    <select
-                      id="country"
-                      name="country"
-                      value={country}
-                      onChange={(event) => {
-                        setCountry(event.target.value);
-                        if (event.target.value !== "Otro") {
-                          setCustomCountry("");
-                        }
-                        clearStickerError();
-                      }}
-                    >
-                      <option value="">Seleccionar</option>
-                      {COUNTRIES.map((countryOption) => (
-                        <option key={countryOption} value={countryOption}>
-                          {countryOption}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
                   <div className="field sticker-title-field">
-                    <label htmlFor="sticker-title">
-                      Título o número de figurita
-                    </label>
+                    <label htmlFor="sticker-numbers">Separados por coma</label>
                     <input
-                      id="sticker-title"
-                      name="sticker-title"
+                      id="sticker-numbers"
+                      name="sticker-numbers"
                       type="text"
-                      placeholder="Ej: 11"
-                      value={stickerTitle}
+                      placeholder="Ej: 11, 25, 140, 302"
+                      value={stickerInput}
                       onChange={(event) => {
-                        setStickerTitle(event.target.value);
-                        clearStickerError();
+                        setStickerInput(event.target.value);
+                        setErrors((current) => ({
+                          ...current,
+                          sticker: "",
+                        }));
+                        resetStatus();
                       }}
+                      onKeyDown={handleStickerKeyDown}
+                      aria-invalid={Boolean(errors.sticker)}
                     />
                   </div>
 
                   <button
                     type="button"
                     className="button add-sticker-button"
-                    onClick={handleAddSticker}
+                    onClick={handleAddStickers}
                   >
                     <PlusIcon />
                     Agregar
                   </button>
                 </div>
-
-                {country === "Otro" && (
-                  <div className="field custom-country-field">
-                    <label htmlFor="custom-country">Escribí el país</label>
-                    <input
-                      id="custom-country"
-                      name="custom-country"
-                      type="text"
-                      placeholder="Ej: Australia"
-                      value={customCountry}
-                      onChange={(event) => {
-                        setCustomCountry(event.target.value);
-                        clearStickerError();
-                      }}
-                    />
-                  </div>
-                )}
 
                 {errors.sticker && (
                   <span className="field-error sticker-builder-error">
@@ -392,7 +274,7 @@ export default function FigusApp() {
                         {sticker}
                         <button
                           type="button"
-                          aria-label={`Eliminar ${sticker}`}
+                          aria-label={`Eliminar figurita ${sticker}`}
                           onClick={() => removeSticker(sticker)}
                         >
                           ×
@@ -422,7 +304,7 @@ export default function FigusApp() {
                 ) : (
                   <>
                     <SaveIcon />
-                    Guardar Mis Figus
+                    Guardar
                   </>
                 )}
               </button>
