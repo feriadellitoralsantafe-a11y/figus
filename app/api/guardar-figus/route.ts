@@ -7,6 +7,17 @@ type FigusPayload = {
   figuritas?: unknown;
 };
 
+function extractGoogleError(responseText: string) {
+  const messageMatch = responseText.match(
+    /<p[^>]*class=["']errorMessage["'][^>]*>(.*?)<\/p>/i,
+  );
+
+  return messageMatch?.[1]
+    ?.replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .trim();
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as FigusPayload;
@@ -16,7 +27,15 @@ export async function POST(request: Request) {
     const figuritas =
       typeof body.figuritas === "string" ? body.figuritas.trim() : "";
 
+    console.log("[guardar-figus] Datos recibidos:", {
+      dni,
+      celular,
+      figuritas,
+    });
+
     if (!dni || !celular || !figuritas) {
+      console.error("[guardar-figus] Validación fallida: faltan campos.");
+
       return Response.json(
         {
           success: false,
@@ -35,18 +54,40 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
 
+    const responseText = await response.text();
+
+    console.log("[guardar-figus] Respuesta de Google Apps Script:", {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.url,
+      body: responseText,
+    });
+
     if (!response.ok) {
+      const responseMessage = extractGoogleError(responseText);
+      const googleError = [
+        `Google Apps Script respondió con estado ${response.status}`,
+        response.statusText,
+        responseMessage,
+      ]
+        .filter(Boolean)
+        .join(" - ");
+
+      console.error("[guardar-figus] Google Apps Script falló:", googleError);
+
       return Response.json(
         {
           success: false,
-          error: `Google Apps Script respondió con estado ${response.status}.`,
+          error: googleError,
         },
         { status: 500 },
       );
     }
 
-    return Response.json({ success: true });
+    return Response.json({ success: true, googleResponse: responseText });
   } catch (error) {
+    console.error("[guardar-figus] Error exacto:", error);
+
     return Response.json(
       {
         success: false,

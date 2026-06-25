@@ -5,6 +5,11 @@ import { FormEvent, useState } from "react";
 
 type FormStatus = "idle" | "saving" | "success" | "error";
 
+type SaveResponse = {
+  success?: boolean;
+  error?: string;
+};
+
 const initialForm = {
   dni: "",
   celular: "",
@@ -16,10 +21,12 @@ export default function FigusApp() {
   const [form, setForm] = useState(initialForm);
   const [status, setStatus] = useState<FormStatus>("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState("");
 
   function updateField(field: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: "" }));
+    setSubmitError("");
     if (status !== "idle") setStatus("idle");
   }
 
@@ -37,6 +44,7 @@ export default function FigusApp() {
     if (Object.keys(nextErrors).length > 0) return;
 
     setStatus("saving");
+    setSubmitError("");
 
     try {
       const response = await fetch("/api/guardar-figus", {
@@ -49,11 +57,23 @@ export default function FigusApp() {
         }),
       });
 
-      if (!response.ok) throw new Error("No se pudo guardar");
+      const result = (await response.json().catch(() => ({}))) as SaveResponse;
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.error ||
+            `La API respondió con estado ${response.status} ${response.statusText}.`,
+        );
+      }
 
       setForm(initialForm);
       setStatus("success");
-    } catch {
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "No pudimos guardar tus figus. Intentá de nuevo",
+      );
       setStatus("error");
     }
   }
@@ -120,6 +140,7 @@ export default function FigusApp() {
                   setShowForm(false);
                   setStatus("idle");
                   setErrors({});
+                  setSubmitError("");
                 }}
               >
                 ×
@@ -213,7 +234,8 @@ export default function FigusApp() {
                 )}
                 {status === "error" && (
                   <p className="status-message status-error">
-                    No pudimos guardar tus figus. Intentá de nuevo
+                    {submitError ||
+                      "No pudimos guardar tus figus. Intentá de nuevo"}
                   </p>
                 )}
               </div>
