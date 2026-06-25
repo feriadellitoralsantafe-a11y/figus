@@ -1,5 +1,5 @@
 const GOOGLE_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbwN1tUmwe6qfURUMiRLwMBG_PxZOMgSD02eGupM6zQiHd6BPd_kvacSyPs7gtDvZF_Bnw/exec";
+  "https://script.google.com/macros/s/AKfycbyNGaazJFZUAMSaedBo9lvlElGH7m15o3UAewirax5pkvk3VN3sX7vfGNdh-8STHFTVtg/exec";
 
 type FigusPayload = {
   dni?: unknown;
