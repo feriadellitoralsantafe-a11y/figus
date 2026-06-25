@@ -68,7 +68,6 @@ export default function FigusApp() {
       setForm(initialForm);
       setStatus("success");
     } catch (error) {
-      console.error("[guardar-figus] Error al guardar:", error);
       setSubmitError(
         error instanceof Error
           ? error.message
