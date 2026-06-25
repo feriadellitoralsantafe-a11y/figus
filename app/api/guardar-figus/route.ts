@@ -3,6 +3,7 @@ const GOOGLE_SCRIPT_URL =
 
 type FigusPayload = {
   dni?: unknown;
+  nombreApellido?: unknown;
   celular?: unknown;
   figuritas?: unknown;
 };
@@ -22,6 +23,10 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as FigusPayload;
     const dni = typeof body.dni === "string" ? body.dni.trim() : "";
+    const nombreApellido =
+      typeof body.nombreApellido === "string"
+        ? body.nombreApellido.trim()
+        : "";
     const celular =
       typeof body.celular === "string" ? body.celular.trim() : "";
     const figuritas =
@@ -29,11 +34,12 @@ export async function POST(request: Request) {
 
     console.log("[guardar-figus] Datos recibidos:", {
       dni,
+      nombreApellido,
       celular,
       figuritas,
     });
 
-    if (!dni || !celular || !figuritas) {
+    if (!dni || !nombreApellido || !celular || !figuritas) {
       console.error("[guardar-figus] Validación fallida: faltan campos.");
 
       return Response.json(
@@ -52,7 +58,7 @@ export async function POST(request: Request) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ dni, celular, figuritas }),
+      body: JSON.stringify({ dni, nombreApellido, celular, figuritas }),
       cache: "no-store",
     });
 

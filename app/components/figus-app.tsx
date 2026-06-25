@@ -40,6 +40,7 @@ const COUNTRIES = [
 
 const initialForm = {
   dni: "",
+  nombreApellido: "",
   celular: "",
 };
 
@@ -121,6 +122,9 @@ export default function FigusApp() {
 
     const nextErrors: Record<string, string> = {};
     if (!form.dni.trim()) nextErrors.dni = "Ingresá tu DNI.";
+    if (!form.nombreApellido.trim()) {
+      nextErrors.nombreApellido = "Ingresá tu nombre y apellido.";
+    }
     if (!form.celular.trim()) nextErrors.celular = "Ingresá tu celular.";
     if (stickers.length === 0) {
       nextErrors.figuritas = "Agregá al menos una figurita.";
@@ -138,6 +142,7 @@ export default function FigusApp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           dni: form.dni.trim(),
+          nombreApellido: form.nombreApellido.trim(),
           celular: form.celular.trim(),
           figuritas: stickers.join(", "),
         }),
@@ -231,7 +236,7 @@ export default function FigusApp() {
             </div>
 
             <form onSubmit={handleSubmit} noValidate>
-              <div className="field-row">
+              <div className="field-row identity-row">
                 <div className="field">
                   <label htmlFor="dni">DNI</label>
                   <input
@@ -246,6 +251,27 @@ export default function FigusApp() {
                     aria-invalid={Boolean(errors.dni)}
                   />
                   {errors.dni && <span className="field-error">{errors.dni}</span>}
+                </div>
+
+                <div className="field">
+                  <label htmlFor="nombreApellido">Nombre y apellido</label>
+                  <input
+                    id="nombreApellido"
+                    name="nombreApellido"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Ej: Juan Pérez"
+                    value={form.nombreApellido}
+                    onChange={(event) =>
+                      updateField("nombreApellido", event.target.value)
+                    }
+                    aria-invalid={Boolean(errors.nombreApellido)}
+                  />
+                  {errors.nombreApellido && (
+                    <span className="field-error">
+                      {errors.nombreApellido}
+                    </span>
+                  )}
                 </div>
 
                 <div className="field">

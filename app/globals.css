@@ -429,7 +429,12 @@ h2 {
   gap: 15px;
 }
 
+.identity-row {
+  grid-template-columns: 0.75fr 1.35fr 1fr;
+}
+
 .field {
+  min-width: 0;
   margin-bottom: 18px;
 }
 
@@ -816,12 +821,21 @@ h2 {
 }
 
 @media (max-width: 640px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   .page-shell {
+    width: 100%;
     align-items: start;
-    padding: 18px 12px;
+    overflow-x: clip;
+    padding: 16px 12px 28px;
   }
 
   .main-card {
+    width: 100%;
     min-height: calc(100vh - 36px);
     border-radius: 22px;
     box-shadow:
@@ -831,7 +845,8 @@ h2 {
   }
 
   .brand-row {
-    padding: 0 22px;
+    min-height: 76px;
+    padding: 0 16px;
   }
 
   .brand-venue {
@@ -846,21 +861,28 @@ h2 {
   }
 
   .hero {
-    padding: 58px 27px 48px;
+    padding: 48px 22px 44px;
+    text-align: center;
   }
 
   h1 {
-    font-size: clamp(42px, 14vw, 62px);
+    max-width: 100%;
+    font-size: clamp(34px, 11.5vw, 50px);
+    letter-spacing: -0.055em;
+    overflow-wrap: anywhere;
     text-shadow:
       2px 2px 0 rgba(8, 120, 255, 0.85),
       4px 4px 0 rgba(255, 22, 143, 0.28);
   }
 
   .subtitle {
+    margin-right: auto;
+    margin-left: auto;
     font-size: 15px;
   }
 
   .actions {
+    justify-content: center;
     flex-direction: column;
   }
 
@@ -869,16 +891,45 @@ h2 {
   }
 
   .form-panel {
-    margin: -20px 16px 30px;
-    padding: 22px 18px;
+    width: auto;
+    margin: -18px 12px 28px;
+    padding: 22px 16px;
     box-shadow:
       3px 3px 0 rgba(255, 22, 143, 0.3),
       0 18px 42px rgba(0, 0, 0, 0.36);
   }
 
+  .form-heading {
+    align-items: center;
+  }
+
+  .form-heading > div {
+    min-width: 0;
+  }
+
+  h2 {
+    font-size: clamp(22px, 7vw, 27px);
+    overflow-wrap: anywhere;
+  }
+
   .field-row {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+
+  .identity-row {
+    grid-template-columns: 1fr;
+  }
+
+  .field input,
+  .field textarea,
+  .field select {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .sticker-builder-label {
+    text-align: left;
   }
 
   .sticker-entry-row {
@@ -896,6 +947,23 @@ h2 {
 
   .add-sticker-button {
     width: 100%;
+  }
+
+  .sticker-preview {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .sticker-chip {
+    max-width: 100%;
+    justify-content: space-between;
+    overflow-wrap: anywhere;
+  }
+
+  .submit-button {
+    width: 100%;
+    margin-right: auto;
+    margin-left: auto;
   }
 
   .card-footer {
