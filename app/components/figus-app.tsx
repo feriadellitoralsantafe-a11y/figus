@@ -179,7 +179,7 @@ export default function FigusApp() {
     const nextErrors: Record<string, string> = {};
     const normalizedDni = normalizeDni(dni);
     const figusSeleccionadas = normalizeStickers(stickers.join(", "));
-    const finalFiguritas = figusSeleccionadas.join(", ");
+    const figuritasFinales = figusSeleccionadas.join(", ");
 
     if (!normalizedDni) {
       nextErrors.dni = "Ingresá tu DNI.";
@@ -187,7 +187,7 @@ export default function FigusApp() {
     if (!nombreApellido.trim()) {
       nextErrors.nombreApellido = "Ingresá tu nombre y apellido.";
     }
-    if (!finalFiguritas) {
+    if (figusSeleccionadas.length === 0) {
       nextErrors.figuritas = "Agregá al menos una Figu.";
     }
 
@@ -203,10 +203,10 @@ export default function FigusApp() {
         dni: normalizedDni,
         nombreApellido: nombreApellido.trim(),
         celular: "",
-        figuritas: finalFiguritas,
+        figuritas: figuritasFinales,
       };
 
-      console.log("[figus-app] Payload enviado al guardar:", payload);
+      console.log("payload guardarFigus", payload);
 
       const response = await fetch("/api/guardar-figus", {
         method: "POST",
@@ -221,7 +221,7 @@ export default function FigusApp() {
       }
 
       setDni(normalizedDni);
-      setStickers(normalizeStickers(finalFiguritas));
+      setStickers(figusSeleccionadas);
       setMode("edit");
       setStatus("success");
     } catch (error) {
