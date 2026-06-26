@@ -60,6 +60,7 @@ export default function FigusApp() {
   const [submitError, setSubmitError] = useState("");
 
   const isEditing = mode === "edit";
+  const debugFigus = stickers.join(", ");
 
   function resetStatus() {
     setSubmitError("");
@@ -177,14 +178,19 @@ export default function FigusApp() {
     event.preventDefault();
 
     const nextErrors: Record<string, string> = {};
-    const normalizedDni = normalizeDni(dni);
     const figusSeleccionadas = normalizeStickers(stickers.join(", "));
-    const figuritasFinales = figusSeleccionadas.join(", ");
+    const payload = {
+      action: "guardarFigus",
+      dni: dni.trim(),
+      nombreApellido: nombreApellido.trim(),
+      celular: "",
+      figuritas: figusSeleccionadas.join(", "),
+    };
 
-    if (!normalizedDni) {
+    if (!payload.dni) {
       nextErrors.dni = "Ingresá tu DNI.";
     }
-    if (!nombreApellido.trim()) {
+    if (!payload.nombreApellido) {
       nextErrors.nombreApellido = "Ingresá tu nombre y apellido.";
     }
     if (figusSeleccionadas.length === 0) {
@@ -198,14 +204,6 @@ export default function FigusApp() {
     setSubmitError("");
 
     try {
-      const payload = {
-        action: "guardarFigus",
-        dni: normalizedDni,
-        nombreApellido: nombreApellido.trim(),
-        celular: "",
-        figuritas: figuritasFinales,
-      };
-
       console.log("payload guardarFigus", payload);
 
       const response = await fetch("/api/guardar-figus", {
@@ -220,7 +218,7 @@ export default function FigusApp() {
         throw new Error(result.error || "No pudimos guardar tus Figus.");
       }
 
-      setDni(normalizedDni);
+      setDni(payload.dni);
       setStickers(figusSeleccionadas);
       setMode("edit");
       setStatus("success");
@@ -501,6 +499,12 @@ export default function FigusApp() {
                     </>
                   )}
                 </button>
+
+                <div className="debug-panel" aria-live="polite">
+                  <span>DNI: {dni || "-"}</span>
+                  <span>Nombre: {nombreApellido || "-"}</span>
+                  <span>Figus: {debugFigus || "-"}</span>
+                </div>
 
                 <StatusMessage
                   status={status}

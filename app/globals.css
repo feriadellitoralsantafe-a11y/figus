@@ -664,6 +664,20 @@ h2 {
   transform: none;
 }
 
+.debug-panel {
+  display: grid;
+  gap: 5px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(1, 5, 16, 0.45);
+  color: #aab8d2;
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .spinner {
   width: 16px;
   height: 16px;
