@@ -34,10 +34,6 @@ function normalizeStickers(value: string) {
     });
 }
 
-function stringifyStickerChips(stickerChips: string[]) {
-  return normalizeStickers(stickerChips.join(", ")).join(", ");
-}
-
 async function readApiResponse(response: Response) {
   const responseText = await response.text();
 
@@ -182,7 +178,8 @@ export default function FigusApp() {
 
     const nextErrors: Record<string, string> = {};
     const normalizedDni = normalizeDni(dni);
-    const finalFiguritas = stringifyStickerChips(stickers);
+    const figusSeleccionadas = normalizeStickers(stickers.join(", "));
+    const finalFiguritas = figusSeleccionadas.join(", ");
 
     if (!normalizedDni) {
       nextErrors.dni = "Ingresá tu DNI.";
@@ -206,9 +203,10 @@ export default function FigusApp() {
         dni: normalizedDni,
         nombreApellido: nombreApellido.trim(),
         celular: "",
-        pais: "",
         figuritas: finalFiguritas,
       };
+
+      console.log("[figus-app] Payload enviado al guardar:", payload);
 
       const response = await fetch("/api/guardar-figus", {
         method: "POST",
