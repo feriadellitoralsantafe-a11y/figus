@@ -2,15 +2,56 @@
 
 import { FormEvent, KeyboardEvent, useState } from "react";
 
-type FormStatus = "idle" | "saving" | "success" | "error";
+type FormStatus = "idle" | "searching" | "saving" | "success" | "error";
+type Mode = "new" | "edit";
 
-type SaveResponse = {
+type ApiResponse = {
   success?: boolean;
+  exists?: boolean;
+  participante?: {
+    dni?: string;
+    nombreApellido?: string;
+    figuritas?: string;
+  };
   error?: string;
 };
 
+function normalizeDni(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+function normalizeStickers(value: string) {
+  const seen = new Set<string>();
+
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .filter((entry) => {
+      if (seen.has(entry)) return false;
+      seen.add(entry);
+      return true;
+    });
+}
+
+async function readApiResponse(response: Response) {
+  const responseText = await response.text();
+
+  try {
+    return JSON.parse(responseText) as ApiResponse;
+  } catch {
+    return {
+      success: false,
+      error:
+        "La respuesta del servidor no fue JSON válido. Revisá la URL de la API o del Google Apps Script.",
+    };
+  }
+}
+
 export default function FigusApp() {
   const [showForm, setShowForm] = useState(false);
+  const [mode, setMode] = useState<Mode | null>(null);
+  const [dni, setDni] = useState("");
   const [nombreApellido, setNombreApellido] = useState("");
   const [stickerInput, setStickerInput] = useState("");
   const [stickers, setStickers] = useState<string[]>([]);
@@ -18,21 +59,31 @@ export default function FigusApp() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState("");
 
+  const isEditing = mode === "edit";
+
   function resetStatus() {
     setSubmitError("");
     if (status !== "idle") setStatus("idle");
   }
 
+  function resetFlow() {
+    setMode(null);
+    setDni("");
+    setNombreApellido("");
+    setStickerInput("");
+    setStickers([]);
+    setStatus("idle");
+    setErrors({});
+    setSubmitError("");
+  }
+
   function handleAddStickers() {
-    const entries = stickerInput
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter(Boolean);
+    const entries = normalizeStickers(stickerInput);
 
     if (entries.length === 0) {
       setErrors((current) => ({
         ...current,
-        sticker: "Ingresá al menos un número de figurita.",
+        sticker: "Ingresá al menos un número de Figu.",
       }));
       return;
     }
@@ -73,15 +124,69 @@ export default function FigusApp() {
     resetStatus();
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleDniSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const normalizedDni = normalizeDni(dni);
+    if (!normalizedDni) {
+      setErrors({ dni: "Ingresá tu DNI." });
+      return;
+    }
+
+    setStatus("searching");
+    setSubmitError("");
+    setErrors({});
+
+    try {
+      const response = await fetch("/api/guardar-figus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "buscarPorDni", dni: normalizedDni }),
+      });
+
+      const result = await readApiResponse(response);
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "No pudimos consultar ese DNI.");
+      }
+
+      setDni(normalizedDni);
+
+      if (result.exists && result.participante) {
+        setMode("edit");
+        setNombreApellido(result.participante.nombreApellido || "");
+        setStickers(normalizeStickers(result.participante.figuritas || ""));
+      } else {
+        setMode("new");
+        setNombreApellido("");
+        setStickers([]);
+      }
+
+      setStatus("idle");
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "No pudimos consultar ese DNI.",
+      );
+      setStatus("error");
+    }
+  }
+
+  async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const nextErrors: Record<string, string> = {};
+    const normalizedDni = normalizeDni(dni);
+
+    if (!normalizedDni) {
+      nextErrors.dni = "Ingresá tu DNI.";
+    }
     if (!nombreApellido.trim()) {
       nextErrors.nombreApellido = "Ingresá tu nombre y apellido.";
     }
     if (stickers.length === 0) {
-      nextErrors.figuritas = "Agregá al menos una figurita.";
+      nextErrors.figuritas = "Agregá al menos una Figu.";
     }
 
     setErrors(nextErrors);
@@ -92,7 +197,8 @@ export default function FigusApp() {
 
     try {
       const payload = {
-        dni: "",
+        action: "guardarFigus",
+        dni: normalizedDni,
         nombreApellido: nombreApellido.trim(),
         celular: "",
         pais: "",
@@ -105,21 +211,21 @@ export default function FigusApp() {
         body: JSON.stringify(payload),
       });
 
-      const result = (await response.json().catch(() => ({}))) as SaveResponse;
+      const result = await readApiResponse(response);
 
       if (!response.ok || !result.success) {
-        throw new Error(
-          result.error ||
-            `La API respondió con estado ${response.status} ${response.statusText}.`,
-        );
+        throw new Error(result.error || "No pudimos guardar tus Figus.");
       }
 
-      setNombreApellido("");
-      setStickerInput("");
-      setStickers([]);
+      setDni(normalizedDni);
+      setMode("edit");
       setStatus("success");
-    } catch {
-      setSubmitError("No pudimos guardar tus figus. Intentá de nuevo");
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "No pudimos guardar tus Figus. Intentá de nuevo.",
+      );
       setStatus("error");
     }
   }
@@ -151,7 +257,7 @@ export default function FigusApp() {
           </h1>
 
           <p className="subtitle">
-            Cargá tus figus y encontrá con quién intercambiar.
+            Cargá tus Figus y encontrá con quién intercambiar.
           </p>
 
           {!showForm && (
@@ -162,7 +268,7 @@ export default function FigusApp() {
                 onClick={() => setShowForm(true)}
               >
                 <PlusIcon />
-                Cargar Mis Figus
+                Cargar / modificar mis Figus
               </button>
             </div>
           )}
@@ -173,7 +279,13 @@ export default function FigusApp() {
             <div className="form-heading">
               <div>
                 <span className="step-label">TU COLECCIÓN</span>
-                <h2>Cargá tus figus</h2>
+                <h2>
+                  {mode
+                    ? isEditing
+                      ? "Modificar mis Figus"
+                      : "Cargar mis Figus"
+                    : "Ingresá tu DNI"}
+                </h2>
               </div>
               <button
                 type="button"
@@ -181,149 +293,222 @@ export default function FigusApp() {
                 aria-label="Cerrar formulario"
                 onClick={() => {
                   setShowForm(false);
-                  setStatus("idle");
-                  setErrors({});
-                  setSubmitError("");
+                  resetFlow();
                 }}
               >
                 ×
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} noValidate>
-              <div className="field-row identity-row">
+            {!mode ? (
+              <form onSubmit={handleDniSubmit} noValidate>
                 <div className="field">
-                  <label htmlFor="nombreApellido">Nombre y apellido</label>
+                  <label htmlFor="dni">Ingresá tu DNI</label>
                   <input
-                    id="nombreApellido"
-                    name="nombreApellido"
+                    id="dni"
+                    name="dni"
                     type="text"
-                    autoComplete="name"
-                    placeholder="Ej: Juan Pérez"
-                    value={nombreApellido}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="Ej: 30123456"
+                    value={dni}
                     onChange={(event) => {
-                      setNombreApellido(event.target.value);
-                      setErrors((current) => ({
-                        ...current,
-                        nombreApellido: "",
-                      }));
+                      setDni(event.target.value);
+                      setErrors((current) => ({ ...current, dni: "" }));
                       resetStatus();
                     }}
-                    aria-invalid={Boolean(errors.nombreApellido)}
+                    aria-invalid={Boolean(errors.dni)}
                   />
-                  {errors.nombreApellido && (
-                    <span className="field-error">
-                      {errors.nombreApellido}
-                    </span>
+                  {errors.dni && (
+                    <span className="field-error">{errors.dni}</span>
                   )}
                 </div>
-              </div>
 
-              <div className="sticker-builder">
-                <span className="sticker-builder-label">
-                  Números de figuritas
-                </span>
+                <button
+                  type="submit"
+                  className="button button-primary submit-button"
+                  disabled={status === "searching"}
+                >
+                  {status === "searching" ? (
+                    <>
+                      <span className="spinner" aria-hidden="true" />
+                      Buscando...
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRightIcon />
+                      Siguiente
+                    </>
+                  )}
+                </button>
 
-                <div className="sticker-entry-row">
-                  <div className="field sticker-title-field">
-                    <label htmlFor="sticker-numbers">Separados por coma</label>
+                <StatusMessage status={status} submitError={submitError} />
+              </form>
+            ) : (
+              <form onSubmit={handleSave} noValidate>
+                {isEditing && (
+                  <p className="section-note">
+                    Estas son tus Figus cargadas.
+                  </p>
+                )}
+
+                <div className="field-row identity-row">
+                  <div className="field">
+                    <label htmlFor="dni-confirm">DNI / Documento</label>
                     <input
-                      id="sticker-numbers"
-                      name="sticker-numbers"
+                      id="dni-confirm"
+                      name="dni"
                       type="text"
-                      placeholder="Ej: 11, 25, 140, 302"
-                      value={stickerInput}
+                      inputMode="numeric"
+                      autoComplete="off"
+                      placeholder="Ej: 30123456"
+                      value={dni}
+                      readOnly={isEditing}
                       onChange={(event) => {
-                        setStickerInput(event.target.value);
+                        setDni(event.target.value);
                         setErrors((current) => ({
                           ...current,
-                          sticker: "",
+                          dni: "",
                         }));
                         resetStatus();
                       }}
-                      onKeyDown={handleStickerKeyDown}
-                      aria-invalid={Boolean(errors.sticker)}
+                      aria-invalid={Boolean(errors.dni)}
                     />
+                    {errors.dni && (
+                      <span className="field-error">{errors.dni}</span>
+                    )}
                   </div>
 
-                  <button
-                    type="button"
-                    className="button add-sticker-button"
-                    onClick={handleAddStickers}
-                  >
-                    <PlusIcon />
-                    Agregar
-                  </button>
+                  <div className="field">
+                    <label htmlFor="nombreApellido">Nombre y apellido</label>
+                    <input
+                      id="nombreApellido"
+                      name="nombreApellido"
+                      type="text"
+                      autoComplete="name"
+                      placeholder="Ej: Juan Pérez"
+                      value={nombreApellido}
+                      onChange={(event) => {
+                        setNombreApellido(event.target.value);
+                        setErrors((current) => ({
+                          ...current,
+                          nombreApellido: "",
+                        }));
+                        resetStatus();
+                      }}
+                      aria-invalid={Boolean(errors.nombreApellido)}
+                    />
+                    {errors.nombreApellido && (
+                      <span className="field-error">
+                        {errors.nombreApellido}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {errors.sticker && (
-                  <span className="field-error sticker-builder-error">
-                    {errors.sticker}
+                <div className="sticker-builder">
+                  <span className="sticker-builder-label">
+                    {isEditing ? "Figus cargadas" : "Números de Figus"}
                   </span>
-                )}
 
-                <div
-                  className={`sticker-preview ${
-                    stickers.length === 0 ? "sticker-preview--empty" : ""
-                  }`}
-                  aria-live="polite"
-                >
-                  {stickers.length > 0 ? (
-                    stickers.map((sticker) => (
-                      <span className="sticker-chip" key={sticker}>
-                        {sticker}
-                        <button
-                          type="button"
-                          aria-label={`Eliminar figurita ${sticker}`}
-                          onClick={() => removeSticker(sticker)}
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))
-                  ) : (
-                    <span>Las figuritas que agregues aparecerán acá.</span>
+                  <div
+                    className={`sticker-preview ${
+                      stickers.length === 0 ? "sticker-preview--empty" : ""
+                    }`}
+                    aria-live="polite"
+                  >
+                    {stickers.length > 0 ? (
+                      stickers.map((sticker) => (
+                        <span className="sticker-chip" key={sticker}>
+                          {sticker}
+                          <button
+                            type="button"
+                            aria-label={`Eliminar Figu ${sticker}`}
+                            onClick={() => removeSticker(sticker)}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))
+                    ) : (
+                      <span>Las Figus que agregues aparecerán acá.</span>
+                    )}
+                  </div>
+
+                  {errors.figuritas && (
+                    <span className="field-error">{errors.figuritas}</span>
+                  )}
+
+                  <div className="sticker-entry-row add-more-row">
+                    <div className="field sticker-title-field">
+                      <label htmlFor="sticker-numbers">
+                        Agregar Figus separadas por coma
+                      </label>
+                      <input
+                        id="sticker-numbers"
+                        name="sticker-numbers"
+                        type="text"
+                        placeholder="Ej: 11, 25, 140, 302"
+                        value={stickerInput}
+                        onChange={(event) => {
+                          setStickerInput(event.target.value);
+                          setErrors((current) => ({
+                            ...current,
+                            sticker: "",
+                          }));
+                          resetStatus();
+                        }}
+                        onKeyDown={handleStickerKeyDown}
+                        aria-invalid={Boolean(errors.sticker)}
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      className="button add-sticker-button"
+                      onClick={handleAddStickers}
+                    >
+                      <PlusIcon />
+                      Agregar
+                    </button>
+                  </div>
+
+                  {errors.sticker && (
+                    <span className="field-error sticker-builder-error">
+                      {errors.sticker}
+                    </span>
                   )}
                 </div>
 
-                {errors.figuritas && (
-                  <span className="field-error">{errors.figuritas}</span>
-                )}
-              </div>
+                <button
+                  type="submit"
+                  className="button button-primary submit-button"
+                  disabled={status === "saving"}
+                >
+                  {status === "saving" ? (
+                    <>
+                      <span className="spinner" aria-hidden="true" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <SaveIcon />
+                      {isEditing ? "Guardar cambios" : "Guardar"}
+                    </>
+                  )}
+                </button>
 
-              <button
-                type="submit"
-                className="button button-primary submit-button"
-                disabled={status === "saving"}
-              >
-                {status === "saving" ? (
-                  <>
-                    <span className="spinner" aria-hidden="true" />
-                    Guardando...
-                  </>
-                ) : (
-                  <>
-                    <SaveIcon />
-                    Guardar
-                  </>
-                )}
-              </button>
-
-              <div className="status-space" aria-live="polite">
-                {status === "success" && (
-                  <p className="status-message status-success">
-                    <CheckIcon />
-                    Tus figus fueron guardadas correctamente
-                  </p>
-                )}
-                {status === "error" && (
-                  <p className="status-message status-error">
-                    {submitError ||
-                      "No pudimos guardar tus figus. Intentá de nuevo"}
-                  </p>
-                )}
-              </div>
-            </form>
+                <StatusMessage
+                  status={status}
+                  submitError={submitError}
+                  successText={
+                    isEditing
+                      ? "Tus cambios fueron guardados correctamente"
+                      : "Tus Figus fueron guardadas correctamente"
+                  }
+                />
+              </form>
+            )}
           </div>
         )}
 
@@ -339,10 +524,44 @@ export default function FigusApp() {
   );
 }
 
+function StatusMessage({
+  status,
+  submitError,
+  successText = "Listo.",
+}: {
+  status: FormStatus;
+  submitError: string;
+  successText?: string;
+}) {
+  return (
+    <div className="status-space" aria-live="polite">
+      {status === "success" && (
+        <p className="status-message status-success">
+          <CheckIcon />
+          {successText}
+        </p>
+      )}
+      {status === "error" && (
+        <p className="status-message status-error">
+          {submitError || "No pudimos completar la acción. Intentá de nuevo."}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function PlusIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function ArrowRightIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 12h14M13 6l6 6-6 6" />
     </svg>
   );
 }
