@@ -69,6 +69,25 @@ function normalizeAction(body: FigusPayload) {
   return "guardarFigus";
 }
 
+function normalizeFiguritasPayload(value: unknown) {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => String(entry).trim())
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  return "";
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as FigusPayload;
@@ -81,8 +100,7 @@ export async function POST(request: Request) {
     const celular =
       typeof body.celular === "string" ? body.celular.trim() : "";
     const pais = typeof body.pais === "string" ? body.pais.trim() : "";
-    const figuritas =
-      typeof body.figuritas === "string" ? body.figuritas.trim() : "";
+    const figuritas = normalizeFiguritasPayload(body.figuritas);
 
     console.log("[guardar-figus] Datos recibidos:", {
       action,
